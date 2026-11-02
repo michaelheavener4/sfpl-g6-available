@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#1f563f">
+  <meta name="description" content="A searchable snapshot of physical books with at least one copy available at SFPL's Golden Gate Valley branch.">
+  <title>Golden Gate Valley · On the Shelf</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#shelf">Skip to shelf</a>
+  <header class="masthead">
+    <div class="masthead-inner">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">SFPL</span>
+        <div>
+          <p class="eyebrow">San Francisco Public Library</p>
+          <p class="branch">Golden Gate Valley</p>
+        </div>
+      </div>
+      <p class="snapshot"><span class="snapshot-dot" aria-hidden="true"></span> Snapshot <time id="snapshot-date">—</time></p>
+    </div>
+
+    <div class="hero">
+      <p class="kicker">A shelf list you can actually browse</p>
+      <h1>On the shelf <em>now</em></h1>
+      <p class="lede">Physical books with at least one copy available at Golden Gate Valley. Search the collection, scan call numbers, and sort the shelf.</p>
+      <div class="stat-grid" id="stats" aria-label="Snapshot statistics"></div>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="toolbar" aria-label="Search and filters">
+      <div class="search-field">
+        <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"></circle>
+          <path d="m20 20-4.2-4.2"></path>
+        </svg>
+        <input id="search" type="search" placeholder="Search title, author, or call number" autocomplete="off" spellcheck="false" aria-label="Search title, author, or call number">
+        <button id="search-clear" class="search-clear" type="button" aria-label="Clear search" hidden>×</button>
+        <kbd aria-hidden="true">/</kbd>
+      </div>
+
+      <div class="selects">
+        <label class="select-field">
+          <span>Sort by</span>
+          <select id="sort">
+            <option value="call">Call number</option>
+            <option value="title">Title A–Z</option>
+            <option value="author">Author A–Z</option>
+            <option value="year-desc">Newest first</option>
+            <option value="year-asc">Oldest first</option>
+            <option value="copies">Most copies listed</option>
+          </select>
+        </label>
+        <label class="select-field">
+          <span>Show</span>
+          <select id="per-page">
+            <option value="50">50</option>
+            <option value="100" selected>100</option>
+            <option value="200">200</option>
+          </select>
+        </label>
+      </div>
+
+      <button id="reset" class="btn btn-ghost" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"></path><path d="M20 4v7h-7"></path></svg>
+        Reset
+      </button>
+    </section>
+
+    <section class="collection-bar" aria-label="Filter by collection">
+      <span class="collection-label">Collection</span>
+      <div id="collection-chips" class="chip-rail" role="group" aria-label="Collections"></div>
+    </section>
+
+    <div class="result-bar">
+      <div class="result-copy">
+        <p id="result-count" aria-live="polite">Loading…</p>
+        <div id="active-filters" class="active-filters"></div>
+      </div>
+      <div class="result-actions">
+        <button id="share" class="btn btn-ghost" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.1 1.1"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.1-1.1"></path></svg>
+          Copy link
+        </button>
+        <button id="export" class="btn" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg>
+          Download filtered CSV
+        </button>
+      </div>
+    </div>
+
+    <section class="table-card" id="shelf" aria-label="Available books">
+      <div class="table-scroll">
+        <table id="books">
+          <caption class="sr-only">Physical books with at least one copy available at Golden Gate Valley</caption>
+          <thead>
+            <tr>
+              <th scope="col" class="col-call">Call number</th>
+              <th scope="col" class="col-title">Title</th>
+              <th scope="col" class="col-author">Author</th>
+              <th scope="col" class="col-year">Year</th>
+              <th scope="col" class="col-collection">Collection</th>
+              <th scope="col" class="col-copies">Copies listed</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+
+      <div id="empty" class="empty" hidden>
+        <p class="empty-title">No books match those filters.</p>
+        <p>Try a shorter search or reset the filters.</p>
+        <button class="btn btn-ghost" type="button" data-reset>Reset filters</button>
+      </div>
+
+      <nav id="pagination" class="pagination" aria-label="Pagination"></nav>
+    </section>
+
+    <details class="about">
+      <summary>About this snapshot</summary>
+      <div class="about-body">
+        <p><strong>What “available” means here:</strong> each row is a title with at least one copy currently available at Golden Gate Valley. The “copies listed” number counts all copy rows shown for that title, including copies that may be checked out. It is not a live count of available copies.</p>
+        <p>The list is built from SFPL’s public branch browse with the “limit to available” filter, then enriched with the new catalog for author and title metadata. Some reference or non-circulating items may appear. Exact per-copy status is available in the library catalog.</p>
+        <p id="about-generated"></p>
+      </div>
+    </details>
+  </main>
+
+  <footer class="footer">
+    <p>Golden Gate Valley Branch · San Francisco Public Library</p>
+    <p class="footer-note">A reading aid, not an official circulation record.</p>
+  </footer>
+
+  <button id="to-top" class="to-top" type="button" aria-label="Back to top" hidden>↑</button>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
