@@ -648,7 +648,6 @@
       state.ddcSection = ddcSection;
       state.ddcClass = ddcSection[0] + "00";
       state.ddcDivision = ddcSection.slice(0, 2) + "0";
-      state.expandedGroups.add(ddcSection);
     } else {
       if (ddcClass && ddc.classes[ddcClass]) state.ddcClass = ddcClass;
       if (ddcDivision && ddc.divisions[ddcDivision]) {

@@ -46,8 +46,8 @@ within division 000, *Computer science, knowledge & systems*.
 The interface provides class and division filter chips, section links on each
 row, and a **Dewey sections (000–999)** sort that inserts collapsible section
 headers, groups DDC-numbered rows in section order, and places non-DDC rows
-afterward. Sections start collapsed; a direct section link opens that section.
-Dewey labels are a browsing aid adapted from publicly available DDC 23
+afterward. Sections start collapsed. Dewey labels are a browsing aid adapted
+from publicly available DDC 23
 summaries; unassigned numbers fall back to the division label. DDC is a trademark of OCLC. This project is
 independent and is not endorsed by OCLC or San Francisco Public Library.
 
