@@ -653,8 +653,12 @@ tbody tr.book-row:hover {
   background: #faf6ed;
 }
 
+tbody tr.book-row[hidden] {
+  display: none;
+}
+
 tbody tr.group-row th {
-  padding: 11px 16px 10px;
+  padding: 0;
   border-top: 1px solid var(--line-strong);
   border-bottom: 1px solid var(--line);
   background: #f4efe3;
@@ -664,6 +668,40 @@ tbody tr.group-row th {
 
 tbody tr.group-row:first-child th {
   border-top: 0;
+}
+
+.group-toggle {
+  display: block;
+  width: 100%;
+  padding: 11px 16px 10px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.group-toggle:hover {
+  background: #eee8d9;
+}
+
+.group-caret {
+  display: inline-block;
+  margin-right: 6px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1;
+  transform: rotate(0deg);
+  transition: transform 120ms ease;
+}
+
+.group-caret::before {
+  content: "▸";
+}
+
+.group-toggle[aria-expanded="true"] .group-caret::before {
+  content: "▾";
 }
 
 .group-kicker,
@@ -1300,9 +1338,13 @@ tr.book-row:hover .title-link svg,
 
   tbody tr.group-row th {
     display: block;
-    padding: 10px 12px;
+    padding: 0;
     border: 0;
     border-radius: 9px;
+  }
+
+  .group-toggle {
+    padding: 10px 12px;
   }
 
   .group-count {

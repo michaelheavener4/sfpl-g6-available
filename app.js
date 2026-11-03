@@ -34,6 +34,7 @@
     ddcClass: "all",
     ddcDivision: "all",
     ddcSection: "all",
+    expandedGroups: new Set(),
     sort: "call",
     page: 1,
     perPage: 100,
@@ -398,7 +399,7 @@
     );
   }
 
-  function rowHTML(book) {
+  function rowHTML(book, groupKey = "", expanded = true) {
     const author = book.author
       ? escapeHTML(book.author)
       : '<span class="author-empty">No author listed</span>';
@@ -412,7 +413,7 @@
       ? `<button class="ddc-link" type="button" data-ddc="${escapeHTML(book.ddc.code)}" title="Dewey ${escapeHTML(book.ddc.code)}: ${escapeHTML(book.ddc.sectionLabel)}. Filter to this number."><span class="ddc-code">${escapeHTML(book.ddc.code)}</span> · ${escapeHTML(book.ddc.sectionLabel)}</button>`
       : "";
     return `
-      <tr class="book-row">
+      <tr class="book-row"${groupKey ? ` data-ddc-group="${escapeHTML(groupKey)}"` : ""}${groupKey && !expanded ? " hidden" : ""}>
         <td class="cell-call" data-label="Call number">
           <div class="call-wrap">
             <span class="call-text">${escapeHTML(book.call)}</span>
@@ -431,14 +432,15 @@
       </tr>`;
   }
 
-  function ddcGroupRowHTML(book, count) {
+  function ddcGroupRowHTML(book, count, expanded) {
     const isOther = !book.ddc;
+    const key = book.ddcCode || "other";
     const label = isOther
       ? "Other call numbers"
       : `${book.ddc.code} · ${book.ddc.sectionLabel}`;
     const kicker = isOther ? "Non-Dewey" : "Dewey section";
     const countLabel = count === 1 ? "title" : "titles";
-    return `<tr class="group-row"><th colspan="6" scope="colgroup"><span class="group-kicker">${kicker}</span><span class="group-title">${escapeHTML(label)}</span><span class="group-count">${count.toLocaleString()} ${countLabel}</span></th></tr>`;
+    return `<tr class="group-row"><th colspan="6" scope="colgroup"><button class="group-toggle" type="button" data-group-toggle="${escapeHTML(key)}" aria-expanded="${expanded}"><span class="group-caret" aria-hidden="true"></span><span class="group-kicker">${kicker}</span><span class="group-title">${escapeHTML(label)}</span><span class="group-count">${count.toLocaleString()} ${countLabel}</span></button></th></tr>`;
   }
 
   function renderRows() {
@@ -459,13 +461,14 @@
     let lastGroup = null;
     elements.rows.innerHTML = current
       .map((book) => {
-        const groupKey = grouped ? book.ddcCode || "other" : null;
+        const groupKey = grouped ? book.ddcCode || "other" : "";
+        const expanded = grouped ? state.expandedGroups.has(groupKey) : true;
         const groupRow =
           grouped && groupKey !== lastGroup
-            ? ddcGroupRowHTML(book, groupCounts.get(groupKey))
+            ? ddcGroupRowHTML(book, groupCounts.get(groupKey), expanded)
             : "";
         lastGroup = groupKey;
-        return groupRow + rowHTML(book);
+        return groupRow + rowHTML(book, groupKey, expanded);
       })
       .join("");
     elements.resultCount.innerHTML = filtered.length
@@ -645,6 +648,7 @@
       state.ddcSection = ddcSection;
       state.ddcClass = ddcSection[0] + "00";
       state.ddcDivision = ddcSection.slice(0, 2) + "0";
+      state.expandedGroups.add(ddcSection);
     } else {
       if (ddcClass && ddc.classes[ddcClass]) state.ddcClass = ddcClass;
       if (ddcDivision && ddc.divisions[ddcDivision]) {
@@ -673,6 +677,7 @@
     state.ddcClass = "all";
     state.ddcDivision = "all";
     state.ddcSection = "all";
+    state.expandedGroups.clear();
     state.sort = "call";
     state.page = 1;
     state.perPage = 100;
@@ -783,6 +788,7 @@
   }
 
   function scrollToTable() {
+    elements.tableScroll.scrollTop = 0;
     document.querySelector(".table-card")?.scrollIntoView({
       behavior: "smooth",
       block: "start",
@@ -901,6 +907,23 @@
     });
 
     elements.rows.addEventListener("click", (event) => {
+      const groupToggle = event.target.closest("[data-group-toggle]");
+      if (groupToggle) {
+        const key = groupToggle.dataset.groupToggle;
+        const expanded = groupToggle.getAttribute("aria-expanded") === "true";
+        if (expanded) {
+          state.expandedGroups.delete(key);
+        } else {
+          state.expandedGroups.add(key);
+        }
+        groupToggle.setAttribute("aria-expanded", String(!expanded));
+        elements.rows
+          .querySelectorAll(`[data-ddc-group="${key}"]`)
+          .forEach((row) => {
+            row.hidden = expanded;
+          });
+        return;
+      }
       const ddcButton = event.target.closest("[data-ddc]");
       if (ddcButton) {
         const code = ddcButton.dataset.ddc;
