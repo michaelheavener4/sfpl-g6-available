@@ -48,6 +48,7 @@
           <span>Sort by</span>
           <select id="sort">
             <option value="call">Call number</option>
+            <option value="ddc">Dewey sections</option>
             <option value="title">Title A–Z</option>
             <option value="author">Author A–Z</option>
             <option value="year-desc">Newest first</option>
@@ -74,6 +75,14 @@
     <section class="collection-bar" aria-label="Filter by collection">
       <span class="collection-label">Collection</span>
       <div id="collection-chips" class="chip-rail" role="group" aria-label="Collections"></div>
+    </section>
+
+    <section class="collection-bar dewey-bar" id="ddc-bar" aria-label="Filter by Dewey Decimal class" hidden>
+      <span class="collection-label">Dewey</span>
+      <div class="dewey-stack">
+        <div id="ddc-classes" class="chip-rail" role="group" aria-label="Dewey main classes"></div>
+        <div id="ddc-divisions" class="chip-rail chip-rail-sub" role="group" aria-label="Dewey divisions" hidden></div>
+      </div>
     </section>
 
     <div class="result-bar">
@@ -124,6 +133,7 @@
       <summary>About this snapshot</summary>
       <div class="about-body">
         <p><strong>What “available” means here:</strong> each row is a title with at least one copy currently available at Golden Gate Valley. The “copies listed” number counts all copy rows shown for that title, including copies that may be checked out. It is not a live count of available copies.</p>
+        <p><strong>Dewey browsing:</strong> nonfiction call numbers are matched to Dewey Decimal Classification (DDC 23) summary captions at the class, division, and section levels. For example, 006 is <em>Special computer methods</em> within 000 <em>Computer science, information &amp; general works</em>. Use the Dewey chips to filter, or choose <strong>Dewey sections</strong> under Sort by to group numbered nonfiction by topic. Fiction, biography, and other non-Dewey call numbers are not assigned a Dewey label. Labels are for browsing, not a replacement for the catalog record.</p>
         <p>The list is built from SFPL’s public branch browse with the “limit to available” filter, then enriched with the new catalog for author and title metadata. Some reference or non-circulating items may appear. Exact per-copy status is available in the library catalog.</p>
         <p id="about-generated"></p>
       </div>
@@ -139,6 +149,7 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+  <script src="ddc.js"></script>
   <script src="data.js"></script>
   <script src="app.js"></script>
 </body>

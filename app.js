@@ -1,7 +1,20 @@
 (() => {
   const meta = window.G6_META || {};
   const rawBooks = Array.isArray(window.G6_BOOKS) ? window.G6_BOOKS : [];
+  const ddc = window.G6_DDC || { classes: {}, divisions: {}, sections: {} };
   const collator = new Intl.Collator("en", { numeric: true, sensitivity: "base" });
+  const ddcClassNames = {
+    "000": "Computing & info",
+    "100": "Philosophy",
+    "200": "Religion",
+    "300": "Social sciences",
+    "400": "Language",
+    "500": "Science",
+    "600": "Technology",
+    "700": "Arts",
+    "800": "Literature",
+    "900": "History",
+  };
   const collectionOrder = [
     "Juvenile",
     "Teen",
@@ -18,6 +31,9 @@
   const state = {
     query: "",
     collection: "all",
+    ddcClass: "all",
+    ddcDivision: "all",
+    ddcSection: "all",
     sort: "call",
     page: 1,
     perPage: 100,
@@ -29,6 +45,9 @@
     search: document.getElementById("search"),
     searchClear: document.getElementById("search-clear"),
     collectionChips: document.getElementById("collection-chips"),
+    ddcBar: document.getElementById("ddc-bar"),
+    ddcClasses: document.getElementById("ddc-classes"),
+    ddcDivisions: document.getElementById("ddc-divisions"),
     sort: document.getElementById("sort"),
     perPage: document.getElementById("per-page"),
     reset: document.getElementById("reset"),
@@ -101,9 +120,55 @@
     });
   }
 
+  function ddcCodeOf(call) {
+    let value = String(call || "").trim();
+    for (let i = 0; i < 4; i += 1) {
+      const before = value;
+      value = value.replace(
+        /^(?:SPANISH|CHINESE|TEEN|JUV|REF|YA|GN|RO|FRENCH|ARABIC|RUSSIAN|VIETNAMESE|KOREAN|JAPANESE|PORTUGUESE|ITALIAN|GERMAN|HINDI|TAGALOG|BENGALI|URDU|PERSIAN|HEBREW|POLISH|SOMALI|AMHARIC|TURKISH|GREEK)\s+/i,
+        ""
+      );
+      value = value.replace(/^Hi-Lo\s+/i, "");
+      value = value.replace(
+        /^J\s+(?=(?:REF|SPANISH|CHINESE|TEEN|JUV|YA)\b)/i,
+        ""
+      );
+      value = value.replace(/^J\s*(?=\d)/i, "");
+      value = value.replace(/^j?GN\s*(?=\d)/i, "");
+      if (value === before) break;
+    }
+    const match = value.match(/^(\d{3})(?:\.\d+)?/);
+    if (!match || !ddc.sections[match[1]]) return "";
+    return match[1];
+  }
+
+  function ddcForCall(call) {
+    const code = ddcCodeOf(call);
+    if (!code) return null;
+    const classCode = code[0] + "00";
+    const divisionCode = code.slice(0, 2) + "0";
+    const classLabel = ddc.classes[classCode] || "";
+    const divisionLabel = ddc.divisions[divisionCode] || "";
+    const rawSection = ddc.sections[code] || "";
+    const unassigned = !rawSection || rawSection === "[Unassigned]";
+    const sectionLabel = unassigned
+      ? (divisionLabel || classLabel || "Unassigned") + " (unassigned number)"
+      : rawSection;
+    return {
+      code,
+      classCode,
+      divisionCode,
+      classLabel,
+      divisionLabel,
+      sectionLabel,
+      unassigned,
+    };
+  }
+
   function prepareBooks() {
     return rawBooks.map((book) => {
       const collection = collectionOf(book.call);
+      const ddcInfo = ddcForCall(book.call);
       const searchText = normalize(
         [
           book.title,
@@ -112,11 +177,19 @@
           book.catalogCall,
           book.year,
           collection,
+          ddcInfo ? ddcInfo.code : "",
+          ddcInfo ? ddcInfo.classLabel : "",
+          ddcInfo ? ddcInfo.divisionLabel : "",
+          ddcInfo ? ddcInfo.sectionLabel : "",
         ].join(" ")
       );
       return {
         ...book,
         collection,
+        ddc: ddcInfo,
+        ddcCode: ddcInfo ? ddcInfo.code : "",
+        ddcClass: ddcInfo ? ddcInfo.classCode : "",
+        ddcDivision: ddcInfo ? ddcInfo.divisionCode : "",
         searchText,
         yearNumber: Number(book.year) || 0,
         copiesNumber: Number(book.copies) || 0,
@@ -170,12 +243,97 @@
       .join("");
   }
 
+  function renderDdcChips(source) {
+    const classCounts = {};
+    let total = 0;
+    source.forEach((book) => {
+      if (!book.ddc) return;
+      total += 1;
+      classCounts[book.ddc.classCode] = (classCounts[book.ddc.classCode] || 0) + 1;
+    });
+    const hasDdcFilter =
+      state.ddcClass !== "all" ||
+      state.ddcDivision !== "all" ||
+      state.ddcSection !== "all";
+    elements.ddcBar.hidden = total === 0 && !hasDdcFilter;
+    if (elements.ddcBar.hidden) return;
+
+    const classItems = [{ value: "all", label: "All Dewey", count: total }].concat(
+      Object.keys(ddc.classes).map((code) => ({
+        value: code,
+        label: code + " " + (ddcClassNames[code] || ddc.classes[code]),
+        title: ddc.classes[code],
+        count: classCounts[code] || 0,
+      }))
+    );
+    elements.ddcClasses.innerHTML = classItems
+      .map((item) => {
+        const active = item.value === state.ddcClass;
+        return `<button class="filter-chip${active ? " is-active" : ""}" type="button" data-ddc-class="${escapeHTML(item.value)}" aria-pressed="${active}"${item.title ? ` title="${escapeHTML(item.title)}"` : ""}>${escapeHTML(item.label)}<span class="count">${item.count.toLocaleString()}</span></button>`;
+      })
+      .join("");
+
+    if (state.ddcClass === "all") {
+      elements.ddcDivisions.hidden = true;
+      elements.ddcDivisions.replaceChildren();
+      return;
+    }
+
+    const divisionCounts = {};
+    source.forEach((book) => {
+      if (!book.ddc || book.ddc.classCode !== state.ddcClass) return;
+      divisionCounts[book.ddc.divisionCode] =
+        (divisionCounts[book.ddc.divisionCode] || 0) + 1;
+    });
+    const classCount = classCounts[state.ddcClass] || 0;
+    const divisionItems = [
+      {
+        value: "all",
+        label: "All " + (ddcClassNames[state.ddcClass] || state.ddcClass),
+        count: classCount,
+      },
+    ];
+    Object.keys(ddc.divisions)
+      .filter((code) => code[0] === state.ddcClass[0])
+      .forEach((code) => {
+        const count = divisionCounts[code] || 0;
+        if (count === 0 && state.ddcDivision !== code) return;
+        divisionItems.push({
+          value: code,
+          label: code + " " + ddc.divisions[code],
+          title: ddc.divisions[code],
+          count,
+        });
+      });
+    elements.ddcDivisions.hidden = false;
+    elements.ddcDivisions.innerHTML = divisionItems
+      .map((item) => {
+        const active = item.value === state.ddcDivision;
+        return `<button class="filter-chip${active ? " is-active" : ""}" type="button" data-ddc-division="${escapeHTML(item.value)}" aria-pressed="${active}"${item.title ? ` title="${escapeHTML(item.title)}"` : ""}>${escapeHTML(item.label)}<span class="count">${item.count.toLocaleString()}</span></button>`;
+      })
+      .join("");
+  }
+
   function compareBooks(a, b) {
     switch (state.sort) {
       case "title":
         return (
           collator.compare(titleSortKey(a.title), titleSortKey(b.title)) ||
           collator.compare(a.call, b.call)
+        );
+      case "ddc":
+        if (!a.ddcCode && !b.ddcCode) {
+          return (
+            collator.compare(a.call, b.call) ||
+            collator.compare(a.title, b.title)
+          );
+        }
+        if (!a.ddcCode) return 1;
+        if (!b.ddcCode) return -1;
+        return (
+          collator.compare(a.ddcCode, b.ddcCode) ||
+          collator.compare(a.call, b.call) ||
+          collator.compare(a.title, b.title)
         );
       case "author":
         if (!a.author && !b.author) return collator.compare(a.call, b.call);
@@ -250,6 +408,9 @@
       book.catalogCall && book.catalogCall.toLowerCase() !== book.call.toLowerCase()
         ? '<span class="catalog-call">Catalog: ' + escapeHTML(book.catalogCall) + "</span>"
         : "";
+    const ddcLabel = book.ddc
+      ? `<button class="ddc-link" type="button" data-ddc="${escapeHTML(book.ddc.code)}" title="Dewey ${escapeHTML(book.ddc.code)}: ${escapeHTML(book.ddc.sectionLabel)}. Filter to this number."><span class="ddc-code">${escapeHTML(book.ddc.code)}</span> · ${escapeHTML(book.ddc.sectionLabel)}</button>`
+      : "";
     return `
       <tr class="book-row">
         <td class="cell-call" data-label="Call number">
@@ -259,6 +420,7 @@
               <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V5a2 2 0 0 1 2-2h10"></path></svg>
             </button>
           </div>
+          ${ddcLabel}
           ${catalogCall}
         </td>
         <td class="cell-title" data-label="Title"><a class="title-link" href="${escapeHTML(catalogURL(book))}" target="_blank" rel="noopener" aria-label="Open catalog search for ${escapeHTML(book.title)}">${escapeHTML(book.title)}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6"></path><path d="m20 4-9 9"></path><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"></path></svg></a></td>
@@ -269,13 +431,43 @@
       </tr>`;
   }
 
+  function ddcGroupRowHTML(book, count) {
+    const isOther = !book.ddc;
+    const label = isOther
+      ? "Other call numbers"
+      : `${book.ddc.code} · ${book.ddc.sectionLabel}`;
+    const kicker = isOther ? "Non-Dewey" : "Dewey section";
+    const countLabel = count === 1 ? "title" : "titles";
+    return `<tr class="group-row"><th colspan="6" scope="colgroup"><span class="group-kicker">${kicker}</span><span class="group-title">${escapeHTML(label)}</span><span class="group-count">${count.toLocaleString()} ${countLabel}</span></th></tr>`;
+  }
+
   function renderRows() {
     const pages = totalPages();
     state.page = Math.min(Math.max(1, state.page), pages);
     const start = (state.page - 1) * state.perPage;
     const end = Math.min(start + state.perPage, filtered.length);
     const current = filtered.slice(start, end);
-    elements.rows.innerHTML = current.map(rowHTML).join("");
+    const grouped = state.sort === "ddc";
+    let groupCounts = null;
+    if (grouped) {
+      groupCounts = new Map();
+      filtered.forEach((book) => {
+        const key = book.ddcCode || "other";
+        groupCounts.set(key, (groupCounts.get(key) || 0) + 1);
+      });
+    }
+    let lastGroup = null;
+    elements.rows.innerHTML = current
+      .map((book) => {
+        const groupKey = grouped ? book.ddcCode || "other" : null;
+        const groupRow =
+          grouped && groupKey !== lastGroup
+            ? ddcGroupRowHTML(book, groupCounts.get(groupKey))
+            : "";
+        lastGroup = groupKey;
+        return groupRow + rowHTML(book);
+      })
+      .join("");
     elements.resultCount.innerHTML = filtered.length
       ? `Showing <strong>${(start + 1).toLocaleString()}–${end.toLocaleString()}</strong> of <strong>${filtered.length.toLocaleString()}</strong> titles`
       : "No titles match the current filters.";
@@ -329,6 +521,34 @@
     elements.pagination.replaceChildren(fragment);
   }
 
+  function ddcFilterChip() {
+    if (state.ddcSection !== "all") {
+      const code = state.ddcSection;
+      const section = ddc.sections[code] || "";
+      const division = ddc.divisions[code.slice(0, 2) + "0"] || "";
+      const label =
+        section && section !== "[Unassigned]"
+          ? section
+          : division + " (unassigned number)";
+      return { key: "ddc", label: "Dewey", value: code + " · " + label };
+    }
+    if (state.ddcDivision !== "all") {
+      return {
+        key: "ddc",
+        label: "Dewey",
+        value: state.ddcDivision + " · " + (ddc.divisions[state.ddcDivision] || ""),
+      };
+    }
+    if (state.ddcClass !== "all") {
+      return {
+        key: "ddc",
+        label: "Dewey",
+        value: state.ddcClass + " · " + (ddc.classes[state.ddcClass] || ""),
+      };
+    }
+    return null;
+  }
+
   function renderActiveFilters() {
     const chips = [];
     if (state.query.trim()) {
@@ -337,6 +557,8 @@
     if (state.collection !== "all") {
       chips.push({ key: "collection", label: "Collection", value: state.collection });
     }
+    const ddcChip = ddcFilterChip();
+    if (ddcChip) chips.push(ddcChip);
     if (!chips.length) {
       elements.activeFilters.replaceChildren();
       return;
@@ -365,10 +587,21 @@
       counts[book.collection] = (counts[book.collection] || 0) + 1;
     });
     renderCollectionChips(counts);
-    filtered =
+    const base =
       state.collection === "all"
         ? queryFiltered
         : queryFiltered.filter((book) => book.collection === state.collection);
+    renderDdcChips(base);
+    filtered = base.filter((book) => {
+      if (state.ddcClass !== "all" && book.ddcClass !== state.ddcClass) return false;
+      if (state.ddcDivision !== "all" && book.ddcDivision !== state.ddcDivision) {
+        return false;
+      }
+      if (state.ddcSection !== "all" && book.ddcCode !== state.ddcSection) {
+        return false;
+      }
+      return true;
+    });
     filtered.sort(compareBooks);
     if (resetPage) state.page = 1;
     render();
@@ -379,6 +612,9 @@
     const params = new URLSearchParams();
     if (state.query.trim()) params.set("q", state.query.trim());
     if (state.collection !== "all") params.set("c", state.collection);
+    if (state.ddcClass !== "all") params.set("dc", state.ddcClass);
+    if (state.ddcDivision !== "all") params.set("dd", state.ddcDivision);
+    if (state.ddcSection !== "all") params.set("ds", state.ddcSection);
     if (state.sort !== "call") params.set("sort", state.sort);
     if (state.perPage !== 100) params.set("n", String(state.perPage));
     if (state.page > 1) params.set("p", String(state.page));
@@ -395,6 +631,9 @@
     const params = new URLSearchParams(location.search);
     const query = params.get("q");
     const collection = params.get("c");
+    const ddcClass = params.get("dc");
+    const ddcDivision = params.get("dd");
+    const ddcSection = params.get("ds");
     const sort = params.get("sort");
     const perPage = params.get("n");
     const page = params.get("p");
@@ -402,7 +641,18 @@
     if (collection && (collection === "all" || meta.collections?.[collection])) {
       state.collection = collection;
     }
-    if (["call", "title", "author", "year-desc", "year-asc", "copies"].includes(sort)) {
+    if (ddcSection && ddc.sections[ddcSection]) {
+      state.ddcSection = ddcSection;
+      state.ddcClass = ddcSection[0] + "00";
+      state.ddcDivision = ddcSection.slice(0, 2) + "0";
+    } else {
+      if (ddcClass && ddc.classes[ddcClass]) state.ddcClass = ddcClass;
+      if (ddcDivision && ddc.divisions[ddcDivision]) {
+        if (state.ddcClass === "all") state.ddcClass = ddcDivision[0] + "00";
+        if (ddcDivision[0] === state.ddcClass[0]) state.ddcDivision = ddcDivision;
+      }
+    }
+    if (["call", "ddc", "title", "author", "year-desc", "year-asc", "copies"].includes(sort)) {
       state.sort = sort;
     }
     if (["50", "100", "200"].includes(perPage)) {
@@ -420,6 +670,9 @@
   function resetFilters() {
     state.query = "";
     state.collection = "all";
+    state.ddcClass = "all";
+    state.ddcDivision = "all";
+    state.ddcSection = "all";
     state.sort = "call";
     state.page = 1;
     state.perPage = 100;
@@ -481,6 +734,10 @@
       "author",
       "call_number",
       "catalog_call_number",
+      "ddc_code",
+      "ddc_class",
+      "ddc_division",
+      "ddc_section",
       "format",
       "availability",
       "copies_listed_at_branch",
@@ -496,6 +753,10 @@
           book.author,
           book.call,
           book.catalogCall,
+          book.ddcCode,
+          book.ddc ? book.ddc.classLabel : "",
+          book.ddc ? book.ddc.divisionLabel : "",
+          book.ddc ? book.ddc.sectionLabel : "",
           book.format,
           "AT_LEAST_ONE_COPY_AVAILABLE_AT_BRANCH",
           book.copies,
@@ -558,6 +819,31 @@
       if (next) next.focus({ preventScroll: true });
     });
 
+    elements.ddcClasses.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-ddc-class]");
+      if (!button) return;
+      state.ddcClass = button.dataset.ddcClass;
+      state.ddcDivision = "all";
+      state.ddcSection = "all";
+      apply();
+      const next = Array.from(
+        elements.ddcClasses.querySelectorAll("[data-ddc-class]")
+      ).find((chip) => chip.dataset.ddcClass === state.ddcClass);
+      if (next) next.focus({ preventScroll: true });
+    });
+
+    elements.ddcDivisions.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-ddc-division]");
+      if (!button) return;
+      state.ddcDivision = button.dataset.ddcDivision;
+      state.ddcSection = "all";
+      apply();
+      const next = Array.from(
+        elements.ddcDivisions.querySelectorAll("[data-ddc-division]")
+      ).find((chip) => chip.dataset.ddcDivision === state.ddcDivision);
+      if (next) next.focus({ preventScroll: true });
+    });
+
     elements.sort.addEventListener("change", () => {
       state.sort = elements.sort.value;
       apply();
@@ -600,11 +886,31 @@
       if (key === "collection") {
         state.collection = "all";
       }
+      if (key === "ddc") {
+        state.ddcClass = "all";
+        state.ddcDivision = "all";
+        state.ddcSection = "all";
+      }
       apply();
-      elements.search.focus();
+      if (key === "ddc") {
+        const next = elements.ddcClasses.querySelector("[data-ddc-class]");
+        if (next) next.focus();
+      } else {
+        elements.search.focus();
+      }
     });
 
     elements.rows.addEventListener("click", (event) => {
+      const ddcButton = event.target.closest("[data-ddc]");
+      if (ddcButton) {
+        const code = ddcButton.dataset.ddc;
+        state.ddcClass = code[0] + "00";
+        state.ddcDivision = code.slice(0, 2) + "0";
+        state.ddcSection = code;
+        apply();
+        scrollToTable();
+        return;
+      }
       const button = event.target.closest("[data-copy]");
       if (button) copyText(button.dataset.copy);
     });

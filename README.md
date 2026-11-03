@@ -21,6 +21,7 @@ Then visit <http://localhost:8000>.
 - **Titles:** 13,278
 - **Unique call numbers:** 10,559
 - **Titles with an author:** 13,066
+- **Dewey-labeled titles:** 4,682 across 387 sections
 
 ## What "available" means
 
@@ -35,13 +36,28 @@ This is a reading aid, not an official circulation record. Some reference or
 non-circulating items may appear. Check the library catalog for exact,
 current copy status.
 
+## Dewey browsing
+
+Nonfiction call numbers are parsed to the first three-digit Dewey Decimal
+Classification (DDC 23) section, after shelf prefixes such as `J`, `TEEN`, and
+`SPANISH`. For example, `006.3` maps to section 006, *Special computer methods*,
+within division 000, *Computer science, knowledge & systems*.
+
+The interface provides class and division filter chips, section links on each
+row, and a **Dewey sections (000–999)** sort that inserts section headers,
+groups DDC-numbered rows in section order, and places non-DDC rows afterward.
+Dewey labels are a browsing aid adapted from publicly available DDC 23
+summaries; unassigned numbers fall back to the division label. DDC is a trademark of OCLC. This project is
+independent and is not endorsed by OCLC or San Francisco Public Library.
+
 ## Files
 
 | File | Purpose |
 | --- | --- |
 | `index.html` | Page shell and static UI |
 | `styles.css` | Responsive layout, print styles |
-| `app.js` | Search, collection filters, sorting, pagination, CSV export |
+| `app.js` | Search, collection and Dewey filters, sorting, pagination, CSV export |
+| `ddc.js` | Dewey class, division, and section captions |
 | `data.js` | Generated browser dataset (`window.G6_META`, `window.G6_BOOKS`) |
 | `build_data.py` | Converts the CSV into `data.js` |
 | `sfpl_g6_available.py` | Public-catalog collector |
@@ -111,10 +127,17 @@ marked `legacy` in `metadata_source`.
 | `year` | Publication year, when available |
 | `metadata_source` | `bibliocommons` or `legacy` |
 
+The in-browser CSV export adds computed `ddc_code`, `ddc_class`,
+`ddc_division`, and `ddc_section` columns. The snapshot CSV itself keeps the
+original provenance columns shown above.
+
 ## Notes and limitations
 
 - Availability is a point-in-time snapshot, not a live feed.
 - Collection labels are derived from call-number ranges and are approximate.
+- Dewey labels are derived from the leading three-digit section of a call
+  number; prefixed, fiction, biography, and other non-DDC call numbers are left
+  unlabeled. Unassigned DDC numbers use the division caption as a fallback.
 - The classic browse returns title-level availability; individual copy status
   can change independently.
 - A small number of titles may not match a new-catalog record. These retain

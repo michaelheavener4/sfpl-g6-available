@@ -470,6 +470,26 @@ svg {
   display: none;
 }
 
+.dewey-stack {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.chip-rail-sub {
+  padding-top: 1px;
+}
+
+.chip-rail-sub .filter-chip {
+  font-size: 0.72rem;
+}
+
+.chip-rail-sub .filter-chip .count {
+  font-size: 0.68rem;
+}
+
 .filter-chip {
   flex: 0 0 auto;
   padding: 6px 11px;
@@ -633,6 +653,47 @@ tbody tr.book-row:hover {
   background: #faf6ed;
 }
 
+tbody tr.group-row th {
+  padding: 11px 16px 10px;
+  border-top: 1px solid var(--line-strong);
+  border-bottom: 1px solid var(--line);
+  background: #f4efe3;
+  color: var(--green-deep);
+  text-align: left;
+}
+
+tbody tr.group-row:first-child th {
+  border-top: 0;
+}
+
+.group-kicker,
+.group-title,
+.group-count {
+  display: inline-block;
+  vertical-align: baseline;
+}
+
+.group-kicker {
+  margin-right: 8px;
+  color: var(--muted);
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.group-title {
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.group-count {
+  margin-left: 8px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
 .col-call {
   width: 17%;
 }
@@ -716,6 +777,34 @@ tr.book-row:focus-within .copy-btn,
   color: var(--ink);
   font-weight: 600;
   line-height: 1.42;
+}
+
+.ddc-link {
+  display: block;
+  max-width: 100%;
+  margin-top: 3px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  background: none;
+  color: var(--green);
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ddc-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.ddc-link .ddc-code {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
 }
 
 .title-link {
@@ -1127,6 +1216,19 @@ tr.book-row:hover .title-link svg,
     padding-top: 0;
   }
 
+  .dewey-stack,
+  .chip-rail-sub {
+    width: 100%;
+  }
+
+  .chip-rail-sub {
+    flex-wrap: wrap;
+  }
+
+  .ddc-link {
+    max-width: none;
+  }
+
   .search-field kbd {
     display: none;
   }
@@ -1189,6 +1291,23 @@ tr.book-row:hover .title-link svg,
     border: 1px solid var(--line);
     border-radius: 13px;
     background: var(--surface);
+  }
+
+  tbody tr.group-row {
+    display: block;
+    padding: 4px 2px 0;
+  }
+
+  tbody tr.group-row th {
+    display: block;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 9px;
+  }
+
+  .group-count {
+    display: block;
+    margin: 3px 0 0;
   }
 
   tbody tr.book-row:hover {
