@@ -1,5 +1,7 @@
 # Golden Gate Valley shelf list
 
+**Live site: <https://michaelheavener4.github.io/sfpl-g6-available/>**
+
 A searchable, sortable snapshot of physical books with at least one copy
 available at San Francisco Public Library's Golden Gate Valley branch.
 
@@ -17,11 +19,11 @@ Then visit <http://localhost:8000>.
 ## Snapshot
 
 - **Branch:** Golden Gate Valley (`G6`), San Francisco Public Library
-- **Snapshot date:** 2026-11-01
-- **Titles:** 13,278
-- **Unique call numbers:** 10,559
-- **Titles with an author:** 13,066
-- **Dewey-labeled titles:** 4,682 across 387 sections
+- **Snapshot date:** 2026-11-04
+- **Titles:** 11,403
+- **Unique call numbers:** 9,502
+- **Titles with an author:** 11,210
+- **Dewey-labeled titles:** 4,686 across 386 sections
 
 ## What "available" means
 
@@ -149,4 +151,5 @@ original provenance columns shown above.
 ## Publishing
 
 The repository is designed to work as a GitHub Pages site: deploy from the
-`main` branch and the repository root.
+`main` branch and the repository root. The published site is at
+<https://michaelheavener4.github.io/sfpl-g6-available/>.
